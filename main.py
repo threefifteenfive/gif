@@ -6,10 +6,9 @@ import os
 
 
 EXPORT_FILE = "export.gif"
-IMG = None
 
 
-def generate():
+def read_input():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_file", help="file path to the desired input image")
     args = parser.parse_args()
@@ -20,13 +19,16 @@ def generate():
 
     # Using cv2.imread() method
     img = cv2.imread(path)
-    IMG = img
+    #cv2.imshow("input image", img)
+    #cv2.waitKey(0)
+    #cv2.destroyWindow("input image")
+    return img
 
 
 """
 Read the main video to generate the masks
 """
-def read_video():
+def read_video(input_image):
     """
     vidcap = cv2.VideoCapture('media/among-us-dance-dance-BODY-LAYER.mp4')
     count = 0
@@ -59,21 +61,32 @@ def read_video():
     for i in range(len(mask_frames)):
         mask = mask_frames[i]
         x, y, w, h = position_list[i]
-        #cv2.rectangle(mask, (x, y), (x + w, y + h), (255, 0, 0), -1)
+        #cv2.rectangle(mask, (x, y), (x + w, y + h), (255, 0, 0), 3)
         #cv2.circle(mask, (x + w//2, y + h//2), radius=5, color=(0, 0, 255), thickness=-1)
         #cv2.imshow("centered", mask)
         #cv2.waitKey(0)
         #cv2.destroyWindow("centered")
-        if IMG is None:
+        if input_image is None:
             print("NO INPUT IMG")
             continue
+
         print("mask_dim: ", (w, h))
-        orig_dim = IMG.shape
-        print("orig_dim: ", orig_dim)
-        orig_w, orig_h = orig_dim
-        w_scale = round((orig_w / w) * 100)
-        h_scale = round((orig_h / h) * 100)
+        print("orig_dim: ", input_img.shape)
+        orig_h, orig_w = input_img.shape[0], input_image.shape[1]
+        w_scale = round((orig_w / w), 2)
+        h_scale = round((orig_h / h), 2)
         print(w_scale, h_scale)
+
+        new_dim = (int(orig_w // w_scale), int(orig_h // w_scale))
+        # resize image
+        resized = cv2.resize(input_img, new_dim, interpolation=cv2.INTER_AREA)
+        print(new_dim)
+        cv2.imshow("resized", resized)
+        cv2.waitKey(0)
+        cv2.destroyWindow("resized")
+
+
+
 
 
 
@@ -136,5 +149,5 @@ def export(frames):
 
 
 if __name__ == "__main__":
-    generate()
-    read_video()
+    input_img = read_input()
+    read_video(input_img)
