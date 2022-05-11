@@ -56,7 +56,8 @@ def read_video(input_image):
         #cv2.imshow('image', image)
         #cv2.waitKey(0)
 
-    mask_frames, position_list = greenscreen(mask, True)
+    binary_mask_list = []
+    mask_frames, position_list = greenscreen(mask, True, binary_mask_list)
 
     for i in range(len(mask_frames)):
         mask = mask_frames[i]
@@ -80,10 +81,40 @@ def read_video(input_image):
         new_dim = (int(orig_w // w_scale), int(orig_h // w_scale))
         # resize image
         resized = cv2.resize(input_img, new_dim, interpolation=cv2.INTER_AREA)
-        print(new_dim)
-        cv2.imshow("resized", resized)
+        # create mask matrix
+        blank_image = np.zeros((new_dim[1], new_dim[0], 3), np.uint8)
+        gray = cv2.cvtColor(blank_image, cv2.COLOR_BGR2GRAY);
+        # mask out the part of the image to be used
+        center_height = new_dim[1] // 2
+        bot = int(center_height - h // 2)
+        cv2.rectangle(gray, (0, bot), (w, bot + h), (255, 255, 255), -1)
+        target = cv2.bitwise_and(resized, resized, mask=gray)
+        print("new dimensions", new_dim)
+        cv2.imshow("resized", target)
         cv2.waitKey(0)
         cv2.destroyWindow("resized")
+
+        # need to align the section with the mask section in the matrix
+        print("mask shape", mask.shape)
+        blank = np.zeros_like(mask)
+        #wall[x:x + block.shape[0], y:y + block.shape[1]] = block
+        #blank[x:x + w, y:y + h] = target[0:w, bot:bot + h]
+        blank[y:y + h, x:x + w] = target[bot:bot+h, 0:w]
+        print("blank shape", blank.shape)
+        #cv2.imshow("translated", blank)
+        #cv2.waitKey(0)
+        #cv2.destroyWindow("translated")
+
+        # mask with the mask from greenscreen (need to save that from greenscreen method)
+        cv2.imshow("mask", binary_mask_list[i])
+        cv2.waitKey(0)
+        cv2.destroyWindow("mask")
+        input_masked_layer = cv2.bitwise_and(blank, blank, mask=binary_mask_list[i])
+        cv2.imshow("masked input layer", input_masked_layer)
+        cv2.waitKey(0)
+        cv2.destroyWindow("masked input layer"
+                          )
+        # bitwise or them together
 
 
 
@@ -96,7 +127,7 @@ def read_video(input_image):
 Greenscreens the list of frames
 green pixel value = 00FF00
 """
-def greenscreen(frame_list, find_position):
+def greenscreen(frame_list, find_position, mask_list):
     return_list = []
     position_list = []
     for img in frame_list:
@@ -106,8 +137,14 @@ def greenscreen(frame_list, find_position):
         key_mask = cv2.inRange(hsv, (36, 0, 0), (70, 255,255))
         # select inverse of that, non-green pixels
         key_mask = cv2.bitwise_not(key_mask)
+
+        cv2.imshow("mask", key_mask)
+        cv2.waitKey(0)
+        cv2.destroyWindow("mask")
+
         if find_position:
             position_list += [average_mask_pixels(key_mask)]
+            mask_list += [key_mask]
         # mask with original frame to remove the green pixels
         target = cv2.bitwise_and(img, img, mask=key_mask)
         return_list += [target]
