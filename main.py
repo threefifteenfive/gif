@@ -59,6 +59,8 @@ def read_video(input_image):
     binary_mask_list = []
     mask_frames, position_list = greenscreen(mask, True, binary_mask_list)
 
+    final_frames = []
+
     for i in range(len(mask_frames)):
         mask = mask_frames[i]
         x, y, w, h = position_list[i]
@@ -108,32 +110,48 @@ def read_video(input_image):
         #cv2.destroyWindow("translated")
 
         # mask with the mask from greenscreen (need to save that from greenscreen method)
+        """
         cv2.imshow("mask", binary_mask_list[i])
         cv2.waitKey(0)
         cv2.destroyWindow("mask")
+        """
         input_masked_layer = cv2.bitwise_and(blank, blank, mask=binary_mask_list[i])
+        """
         cv2.imshow("masked input layer", input_masked_layer)
         cv2.waitKey(0)
         cv2.destroyWindow("masked input layer")
-
+        """
         # bitwise or them together
+        """
         cv2.imshow("body layer", body_frames[i])
         cv2.waitKey(0)
         cv2.destroyWindow("body layer")
-
+        """
         composit = np.zeros_like(mask)
         cv2.bitwise_or(body_frames[i], input_masked_layer, composit)
+        """
         cv2.imshow("composited", composit)
         cv2.waitKey(0)
         cv2.destroyWindow("composited")
-
+        """
+        """
         cv2.imshow("mask part", mask_frames[i])
         cv2.waitKey(0)
         cv2.destroyWindow("mask part")
-
+        """
         # Create the overlay
         alpha = 0.5
-        composit[mask] = cv2.addWeighted(bg_img, 1 - alpha, shapes, alpha, 0)[mask]
+        # Change this into bool to use it as mask
+        mask = binary_mask_list[i].astype(bool)
+        composit[mask] = cv2.addWeighted(composit, 1 - alpha, mask_frames[i], alpha, 0)[mask]
+        """
+        cv2.imshow("alpha", composit)
+        cv2.waitKey(0)
+        cv2.destroyWindow("alpha")
+        """
+        final_frames += [composit]
+
+    return final_frames
 
 
 
@@ -205,4 +223,5 @@ def export(frames):
 
 if __name__ == "__main__":
     input_img = read_input()
-    read_video(input_img)
+    frame_list = read_video(input_img)
+    export(frame_list)
