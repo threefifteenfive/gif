@@ -29,7 +29,7 @@ def read_input():
 Read the main video to generate the masks
 """
 def read_video(input_image):
-    """
+
     vidcap = cv2.VideoCapture('media/among-us-dance-dance-BODY-LAYER.mp4')
     count = 0
     body = []
@@ -41,8 +41,8 @@ def read_video(input_image):
         count += 1
         body += [image]
 
-    body_frames, position_list_UNUSED = greenscreen(body, False)
-    """
+    body_frames, position_list_UNUSED = greenscreen(body, False, [])
+
     vidcap = cv2.VideoCapture('media/among-us-dance-dance-MASK_LAYER.mp4')
     count = 0
     mask = []
@@ -90,9 +90,11 @@ def read_video(input_image):
         cv2.rectangle(gray, (0, bot), (w, bot + h), (255, 255, 255), -1)
         target = cv2.bitwise_and(resized, resized, mask=gray)
         print("new dimensions", new_dim)
+        """
         cv2.imshow("resized", target)
         cv2.waitKey(0)
         cv2.destroyWindow("resized")
+        """
 
         # need to align the section with the mask section in the matrix
         print("mask shape", mask.shape)
@@ -112,10 +114,26 @@ def read_video(input_image):
         input_masked_layer = cv2.bitwise_and(blank, blank, mask=binary_mask_list[i])
         cv2.imshow("masked input layer", input_masked_layer)
         cv2.waitKey(0)
-        cv2.destroyWindow("masked input layer"
-                          )
-        # bitwise or them together
+        cv2.destroyWindow("masked input layer")
 
+        # bitwise or them together
+        cv2.imshow("body layer", body_frames[i])
+        cv2.waitKey(0)
+        cv2.destroyWindow("body layer")
+
+        composit = np.zeros_like(mask)
+        cv2.bitwise_or(body_frames[i], input_masked_layer, composit)
+        cv2.imshow("composited", composit)
+        cv2.waitKey(0)
+        cv2.destroyWindow("composited")
+
+        cv2.imshow("mask part", mask_frames[i])
+        cv2.waitKey(0)
+        cv2.destroyWindow("mask part")
+
+        # Create the overlay
+        alpha = 0.5
+        composit[mask] = cv2.addWeighted(bg_img, 1 - alpha, shapes, alpha, 0)[mask]
 
 
 
@@ -137,11 +155,11 @@ def greenscreen(frame_list, find_position, mask_list):
         key_mask = cv2.inRange(hsv, (36, 0, 0), (70, 255,255))
         # select inverse of that, non-green pixels
         key_mask = cv2.bitwise_not(key_mask)
-
+        """
         cv2.imshow("mask", key_mask)
         cv2.waitKey(0)
         cv2.destroyWindow("mask")
-
+        """
         if find_position:
             position_list += [average_mask_pixels(key_mask)]
             mask_list += [key_mask]
@@ -165,7 +183,7 @@ def average_mask_pixels(mask):
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     print("Number of contours:" + str(len(contours)))
     x, y, w, h = cv2.boundingRect(contours[-1])
-    cv2.rectangle(mask, (x, y), (x + w, y + h), (255, 0, 0), 3)
+    #cv2.rectangle(mask, (x, y), (x + w, y + h), (255, 0, 0), 3)
     #cv2.imshow("result", mask)
     #cv2.waitKey(0)
     #cv2.destroyWindow("result")
