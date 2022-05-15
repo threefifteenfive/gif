@@ -75,12 +75,16 @@ def read_video(input_image):
 
         print("mask_dim: ", (w, h))
         print("orig_dim: ", input_img.shape)
-        orig_h, orig_w = input_img.shape[0], input_image.shape[1]
+        orig_w, orig_h = input_img.shape[0], input_image.shape[1]
         w_scale = round((orig_w / w), 2)
         h_scale = round((orig_h / h), 2)
         print(w_scale, h_scale)
 
         new_dim = (int(orig_w // w_scale), int(orig_h // w_scale))
+        # since width is larger than height
+        if new_dim[0] != w:
+            resized_offset = w - new_dim[0]
+            new_dim = (new_dim[0] + resized_offset, new_dim[1] + resized_offset)
         # resize image
         resized = cv2.resize(input_img, new_dim, interpolation=cv2.INTER_AREA)
         # create mask matrix
